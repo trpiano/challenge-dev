@@ -1,52 +1,55 @@
-import { FormEventHandler, useState } from "react";
-import axios, { AxiosError } from "axios";
+import { useState } from "react";
+import toast from 'react-hot-toast';
+import axios from "axios";
 
-import { Input, InputAdornment, Select, MenuItem, SelectChangeEvent } from "@material-ui/core";
+import { Input, InputAdornment, MenuItem, Select, SelectChangeEvent } from "@material-ui/core";
+
+import { CEPData, dataProps, initialCEPData, initialData, selectStyles } from "../../constants/enterprise";
+
+import { useAppContext } from "../../context/AppContext";
 
 import { Container, ContentContainer } from "./styles";
 
 interface EnterpriseFormProps {
     isAdd?: boolean;
-  }
-
-interface CEPData {
-    cep: string;
-    logradouro: string;
-    complemento: string;
-    bairro: string;
-    localidade: string;
-    uf: string;
-    ibge: string;
-    gia: string;
-    ddd: string;
-    siafi: string;
+    oldData?: dataProps;
 }
-export default function EnterpriseForm({ isAdd = false }) {
-    const initialCEPData: CEPData = {
-        cep: '',
-        logradouro: '',
-        complemento: '',
-        bairro: '',
-        localidade: '',
-        uf: '',
-        ibge: '',
-        gia: '',
-        ddd: '',
-        siafi: '',
-      };
 
-
-    const [launch, setLaunch] = useState<string>('');
-    const [residential, setResidential] = useState<string>('');
+export default function EnterpriseForm({ isAdd, oldData = initialData }: EnterpriseFormProps) {
+    const [launch, setLaunch] = useState<string>(oldData.launch ?? 'launch');
+    const [name, setName] = useState<string>(oldData.name);
+    const [purpose, setPurpose] = useState<string>(oldData.purpose ?? 'HOME');
+    const [cep, setCep] = useState<string>(oldData.address.cep)
     const [cepFetchResult, setCepFetchResult] = useState<CEPData>(initialCEPData);
+    const [addressNumber, setAddressNumber] = useState<number | undefined>(oldData?.address?.number);
+    const [isFirstLoad, setIsFirstLoad] = useState<boolean>(true);
+
+    const {
+        setIsHome,
+        setIsAddingEnterprises,
+        setIsEditingEnterprises,
+    } = useAppContext();
+
+    if (oldData && isFirstLoad) {
+        setIsFirstLoad(false)
+        fetchCEPData(oldData.address.cep)
+    }
 
     const handleLaunchChange = (event: SelectChangeEvent<string>) => {
         setLaunch(event.target.value);
     };
 
     const handleResidentialChange = (event: SelectChangeEvent<string>) => {
-        setResidential(event.target.value);
+        setPurpose(event.target.value);
     };
+
+    function cepValidation(cepData: string) {
+        setCep(cepData)
+
+        cepData.length < 8
+            ? setCepFetchResult(initialCEPData)
+            : fetchCEPData(cepData)
+    }
 
     async function fetchCEPData(cepData: string) {
         try {
@@ -62,8 +65,52 @@ export default function EnterpriseForm({ isAdd = false }) {
         }
     }
 
-    function handleSubmit(event: FormEventHandler<HTMLFormElement>) {
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
+
+        const formData = {
+            name,
+            launch,
+            purpose,
+            address: {
+                street: cepFetchResult.logradouro,
+                number: addressNumber,
+                district: cepFetchResult.bairro,
+                city: cepFetchResult.localidade,
+                state: cepFetchResult.uf,
+                cep: cep
+            }
+        }
+
+        if (isAdd) {
+            await axios.post(`${process.env.NEXT_PUBLIC_ENTERPRISES_API}/enterprises`, formData)
+                .then(() => {
+                    toast.success('Empreendimento adicionado com sucesso!', {
+                        duration: 5000,
+                    });
+                    setIsHome(true)
+                    setIsAddingEnterprises(false)
+                })
+                .catch(() => {
+                    toast.error('Ocorreu um erro ao adicionar o empreendimento!', {
+                        duration: 5000,
+                    });
+                })
+        } else {
+            await axios.put(`${process.env.NEXT_PUBLIC_ENTERPRISES_API}/enterprises/${oldData.id}`, formData)
+                .then(() => {
+                    toast.success('Empreendimento atualizado com sucesso!', {
+                        duration: 5000,
+                    });
+                    setIsHome(true)
+                    setIsEditingEnterprises(false)
+                })
+                .catch(() => {
+                    toast.error('Ocorreu um erro ao atualizar o empreendimento!', {
+                        duration: 5000,
+                    });
+                })
+        }
     }
 
     return (
@@ -77,6 +124,10 @@ export default function EnterpriseForm({ isAdd = false }) {
                         id="launch"
                         value={launch}
                         onChange={(event) => handleLaunchChange(event)}
+                        startAdornment={
+                            <InputAdornment position="start" />
+                        }
+                        sx={selectStyles}
                     >
                         <MenuItem disabled value="">
                             Lançamento
@@ -89,6 +140,8 @@ export default function EnterpriseForm({ isAdd = false }) {
                     <Input
                         fullWidth
                         id="enterpriseName"
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
                         placeholder="Nome do empreendimento"
                         startAdornment={
                             <InputAdornment position="start" />
@@ -96,48 +149,40 @@ export default function EnterpriseForm({ isAdd = false }) {
                     />
                     <Select
                         fullWidth
-                        id="residential"
-                        value={residential}
+                        id="purpose"
+                        value={purpose}
                         onChange={(event) => handleResidentialChange(event)}
+                        sx={selectStyles}
                     >
                         <MenuItem disabled value="">
                             <em>Residencial</em>
                         </MenuItem>
-                        <MenuItem value="residential">Residencial</MenuItem>
-                        <MenuItem value="commercial">Comercial</MenuItem>
+                        <MenuItem value="HOME">Residencial</MenuItem>
+                        <MenuItem value="COMMERCIAL">Comercial</MenuItem>
                     </Select>
                     <Input
                         fullWidth
                         id="zipCode"
                         placeholder="CEP"
+                        value={cep}
                         inputProps={{ maxLength: 8 }}
-                        onChange={(event) => event.target.value.length < 8 ? setCepFetchResult(Object.assign({}, initialCEPData)) : fetchCEPData(event.target.value)}
+                        onChange={(event) => cepValidation(event.target.value)}
                         startAdornment={
                             <InputAdornment position="start" />
                         }
                     />
 
-                    {cepFetchResult ?
-                        <>
-                            <p>{cepFetchResult.logradouro}</p>
-                            <p>{cepFetchResult.bairro}</p>
-                            <p>{cepFetchResult.localidade}</p>
-                            <p>{cepFetchResult.uf}</p>
-                        </>
-                        :
-                        <>
-                            <p aria-hidden="true" />
-                            <p aria-hidden="true" />
-                            <p aria-hidden="true" />
-                            <p aria-hidden="true" />
-                        </>
-                    }
+                    <p>{cepFetchResult.logradouro}</p>
+                    <p>{cepFetchResult.bairro}</p>
+                    <p>{cepFetchResult.localidade}</p>
+                    <p>{cepFetchResult.uf}</p>
 
                     <Input
                         fullWidth
                         id="number"
                         placeholder="Número"
-                        onChange={(event) => event.target.value.length}
+                        value={addressNumber}
+                        onChange={(event) => setAddressNumber(Number(event.target.value))}
                         inputProps={{
                             pattern: '[0-9]*',
                             inputMode: 'numeric'

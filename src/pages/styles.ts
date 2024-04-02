@@ -149,7 +149,7 @@ export const Flags = styled.div`
     }
 `
 
-export const ContainertLupa = styled.div`
+export const ContainerLupa = styled.div`
     width: 100%;
     height: 2.5rem;
     display: flex;

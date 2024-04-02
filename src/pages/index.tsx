@@ -7,18 +7,20 @@ import ButtonFooter from "../components/ButtonFooter";
 import Header from "../components/Header";
 import EnterpriseForm from "../components/EnterpriseForm";
 
+import { dataProps, initialData } from "../constants/enterprise";
+
 import {
     BoxNameEnterprise,
     ContainerHome,
     ContentHome,
     ContentStatus,
-    ContainertLupa,
+    ContainerLupa,
     ContentLupa,
     Flags,
     FlagsContainer,
     IconsContainer,
 } from "./styles";
-
+import { useAppContext } from "../context/AppContext";
 
 export default function Home() {
     const [enterprises, setEnterprises] = useState([]);
@@ -29,9 +31,16 @@ export default function Home() {
     const [openModalDelete, setOpenModalDelete] = useState(false);
     const [idToDelete, setIdToDelete] = useState<String>()
 
-    const [isHome, setIsHome] = useState(true);
-    const [isAddingEnterprises, setIsAddingEnterprises] = useState(false);
-    const [isEditingEnterprises, setIsEditingEnterprises] = useState(false);
+    const [dataToEdit, setDataToEdit] = useState<dataProps>(initialData)
+
+    const {
+        isHome,
+        isAddingEnterprises,
+        isEditingEnterprises,
+        setIsHome,
+        setIsAddingEnterprises,
+        setIsEditingEnterprises,
+      } = useAppContext();
 
     const Enterprises = async () => {
         await axios.get(`${process.env.NEXT_PUBLIC_ENTERPRISES_API}/enterprises`).then((response) => {
@@ -56,7 +65,8 @@ export default function Home() {
         setIsHome(false);
     }
 
-    function openEditScreen() {
+    function openEditScreen(data: dataProps) {
+        setDataToEdit(data)
         setIsEditingEnterprises(true)
         setIsHome(false);
     }
@@ -106,7 +116,7 @@ export default function Home() {
                             PushButtonReturn={handleHome}
                             returnProps={false}
                         />
-                        <ContainertLupa>
+                        <ContainerLupa>
                             <ContentLupa>
                                 <div>
                                     <Input
@@ -126,14 +136,16 @@ export default function Home() {
                                     />
                                 </div>
                             </ContentLupa>
-                        </ContainertLupa>
+                        </ContainerLupa>
                         {handleSearch.slice(0, rowsPerPage).map((data: any) => {
                             return (
                                 <ContainerHome key={data.id}>
                                     <ContentHome>
                                         {(openModalDelete && idToDelete === data.id) &&
                                             <Alert
-                                                maxWidth="md"
+                                                style={{
+                                                    maxWidth: 'md'
+                                                }}
                                                 severity="error"
                                                 action={
                                                     <>
@@ -166,7 +178,7 @@ export default function Home() {
                                             <IconsContainer>
                                                 <img
                                                     onClick={() => {
-                                                        openEditScreen()
+                                                        openEditScreen(data)
                                                     }}
                                                     src="/images/Vector.svg"
                                                     alt="Icone de Lapis"
@@ -211,7 +223,7 @@ export default function Home() {
                             returnProps={true}
                         />
 
-                        <EnterpriseForm isAdd={false} />
+                        <EnterpriseForm isAdd={false} oldData={dataToEdit} />
                     </>
                 }
             </main>
