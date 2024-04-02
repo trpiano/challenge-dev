@@ -19,6 +19,8 @@ import {
     Flags,
     FlagsContainer,
     IconsContainer,
+    AlertContainer,
+    AlertContentContainer,
 } from "./styles";
 import { useAppContext } from "../context/AppContext";
 
@@ -40,7 +42,7 @@ export default function Home() {
         setIsHome,
         setIsAddingEnterprises,
         setIsEditingEnterprises,
-      } = useAppContext();
+    } = useAppContext();
 
     const Enterprises = async () => {
         await axios.get(`${process.env.NEXT_PUBLIC_ENTERPRISES_API}/enterprises`).then((response) => {
@@ -142,26 +144,28 @@ export default function Home() {
                                 <ContainerHome key={data.id}>
                                     <ContentHome>
                                         {(openModalDelete && idToDelete === data.id) &&
-                                            <Alert
-                                                style={{
-                                                    maxWidth: 'md'
-                                                }}
-                                                severity="error"
-                                                action={
-                                                    <>
-                                                        <Button onClick={() => setOpenModalDelete(false)} color="inherit" size="small">
-                                                            Cancelar
-                                                        </Button>
-                                                        <Button onClick={() => DeleteEnterprise(data.id)} color="inherit" size="small">
-                                                            Confirmar
-                                                        </Button>
-                                                    </>
-                                                }
-                                            >
-                                                Confirma a exclusão do Empreendimento?
-                                            </Alert>
+                                            <AlertContainer>
+                                                <Alert
+                                                    style={{
+                                                        maxWidth: 'md'
+                                                    }}
+                                                    severity="error"
+                                                    action={
+                                                        <AlertContentContainer>
+                                                            <Button onClick={() => setOpenModalDelete(false)} color="inherit" size="small">
+                                                                Cancelar
+                                                            </Button>
+                                                            <Button onClick={() => DeleteEnterprise(data.id)} color="inherit" size="small">
+                                                                Confirmar
+                                                            </Button>
+                                                        </AlertContentContainer>
+                                                    }
+                                                >
+                                                    Confirma a exclusão do Empreendimento?
+                                                </Alert>
+                                            </AlertContainer>
                                         }
-
+                                        
                                         {(!openModalDelete || (openModalDelete && idToDelete !== data.id)) &&
                                             <div>
                                                 <BoxNameEnterprise>
@@ -170,6 +174,7 @@ export default function Home() {
                                                 <p>{data.address.street}, {data.address.number} - {data.address.district}, {data.address.state}</p>
                                             </div>
                                         }
+
                                         <ContentStatus>
                                             <FlagsContainer>
                                                 <Flags>{data.status === "RELEASE" ? "Lançamento" : data.status}</Flags>

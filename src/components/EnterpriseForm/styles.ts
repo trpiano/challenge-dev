@@ -68,4 +68,12 @@ export const ContentContainer = styled.div`
             filter: brightness(0.8);
         }
     }
+
+    @media screen and (max-width: 700px) {
+        width: 90%;
+
+        form{
+            min-width: 100%;
+        }
+    }
 ` 

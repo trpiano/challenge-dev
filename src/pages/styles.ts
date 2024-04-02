@@ -24,6 +24,30 @@ export const ContentHome = styled.div`
     }
 `
 
+export const AlertContainer =  styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    @media screen and (max-width: 768px) {
+        position: absolute;
+
+        z-index: 2;
+
+        flex-direction: column;
+    }
+`
+
+export const AlertContentContainer =  styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    @media screen and (max-width: 768px) {
+        flex-direction: column;
+    }
+`
+
 export const BoxNameEnterprise = styled.div`
     display: flex;
     align-items: center;
